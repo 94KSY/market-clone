@@ -7,15 +7,14 @@ const calcTime = (timestamp) => {
 
   if (hour > 0) return `${hour}시간 전`;
   else if (minute > 0) return `${minute}분 전`;
-  else if (second > 0) return `$${second}초 전`;
-  else "방금 전";
+  else if (second > 0) return `${second}초 전`;
+  else return "방금 전";
 };
 
 const renderData = (data) => {
   const main = document.querySelector("main");
 
   data.reverse().forEach(async (obj) => {
-    // reverse() = 최근 게시물이 위로오게
     const div = document.createElement("div");
     div.className = "item-list";
 
@@ -37,16 +36,16 @@ const renderData = (data) => {
 
     const InfoMetaDiv = document.createElement("div");
     InfoMetaDiv.className = "item-list__info-meta";
-    InfoMetaDiv.innerText = obj.place + "  /  " + calcTime(obj.insertAt);
+    InfoMetaDiv.innerText = obj.place + " " + calcTime(obj.insertAt);
 
     const InfoPriceDiv = document.createElement("div");
-    InfoPriceDiv.className = "Item-list__info-price";
+    InfoPriceDiv.className = "item-list__info-price";
     InfoPriceDiv.innerText = obj.price;
 
-    imgDiv.appendChild(img);
     InfoDiv.appendChild(InfoTitleDiv);
     InfoDiv.appendChild(InfoMetaDiv);
     InfoDiv.appendChild(InfoPriceDiv);
+    imgDiv.appendChild(img);
     div.appendChild(imgDiv);
     div.appendChild(InfoDiv);
     main.appendChild(div);
@@ -54,7 +53,34 @@ const renderData = (data) => {
 };
 
 const fetchList = async () => {
-  const res = await fetch("/items");
+  const token = localStorage.getItem("token");
+  var base64Url = token.split(".")[1];
+  var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  var jsonPayload = decodeURIComponent(
+    atob(base64)
+      .split("")
+      .map(function (c) {
+        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+      })
+      .join("")
+  );
+
+  console.log(
+    JSON.parse(jsonPayload),
+    JSON.parse(jsonPayload).exp - new Date().getTime() / 1000
+  );
+
+  const res = await fetch("/items", {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token"),
+    },
+  });
+  if (res.status === 401) {
+    alert("로그인이 필요합니다!");
+    window.location.pathname = "/login.html";
+    return;
+  }
+
   const data = await res.json();
   renderData(data);
 };
